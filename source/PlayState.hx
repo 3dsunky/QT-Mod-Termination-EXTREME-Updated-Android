@@ -12,7 +12,7 @@ import flash.system.System;
 
 // Lua
 
-#if cpp
+#if windows
 import llua.Convert;
 import llua.Lua;
 import llua.State;
@@ -61,11 +61,13 @@ import lime.utils.Assets;
 import openfl.display.BlendMode;
 import openfl.display.StageQuality;
 import openfl.filters.ShaderFilter;
+import ui.Mobilecontrols;
+import ui.FlxVirtualPad;
 
 #if windows
 import Discord.DiscordClient;
 #end
-#if cpp
+#if windows
 import Sys;
 import sys.FileSystem;
 #end
@@ -108,6 +110,7 @@ class PlayState extends MusicBeatState
 	#end
 
 	private var vocals:FlxSound;
+	var _vpad:FlxVirtualPad;
 
 	private var dad:Character;
 	private var gf:Character;
@@ -253,9 +256,13 @@ class PlayState extends MusicBeatState
 
 	private var executeModchart = false;
 
+	#if mobileC
+	var mcontrols:Mobilecontrols; 
+	#end
+
 	// LUA SHIT
 	
-	#if cpp
+	#if windows
 
 	public static var lua:State = null;
 
@@ -475,10 +482,9 @@ class PlayState extends MusicBeatState
 		repPresses = 0;
 		repReleases = 0;
 
-		#if sys
+		#if windows
 		executeModchart = FileSystem.exists(Paths.lua(PlayState.SONG.song.toLowerCase()  + "/modchart"));
-		#end
-		#if !cpp
+		#else
 		executeModchart = false; // FORCE disable for non cpp targets //Hey, wtf is 'cpp targets'? -Haz
 		#end
 
@@ -1808,6 +1814,38 @@ class PlayState extends MusicBeatState
 		if (loadRep)
 			replayTxt.cameras = [camHUD];
 
+		#if mobileC
+			mcontrols = new Mobilecontrols();
+			switch (mcontrols.mode)
+			{
+				case VIRTUALPAD_RIGHT | VIRTUALPAD_LEFT | VIRTUALPAD_CUSTOM:
+					controls.setVirtualPad(mcontrols._virtualPad, FULL, NONE);
+					_vpad = new FlxVirtualPad(NONE, A);
+					_vpad.alpha = 0.75;
+					_vpad.cameras = [camHUD];
+					this.add(_vpad);
+
+				case HITBOX:
+					controls.setHitBox(mcontrols._hitbox);
+					_vpad = new FlxVirtualPad(NONE, A);
+					_vpad.alpha = 0.75;
+					_vpad.cameras = [camHUD];
+					this.add(_vpad);
+				default:
+			}
+			trackedinputs = controls.trackedinputs;
+			controls.trackedinputs = [];
+
+			var camcontrol = new FlxCamera();
+			FlxG.cameras.add(camcontrol);
+			camcontrol.bgColor.alpha = 0;
+			mcontrols.cameras = [camcontrol];
+
+			mcontrols.visible = false;
+
+			add(mcontrols);
+		#end
+
 		// if (SONG.song == 'South')
 		// FlxG.camera.alpha = 0.7;
 		// UI_camera.zoom = 1;
@@ -2054,6 +2092,10 @@ class PlayState extends MusicBeatState
 
 	function startCountdown():Void
 	{
+		#if mobileC
+		mcontrols.visible = true;
+		#end
+
 		inCutscene = false;
 
 		generateStaticArrows(0);
@@ -2065,7 +2107,7 @@ class PlayState extends MusicBeatState
 		}
 
 
-		#if cpp
+		#if windows
 		if (executeModchart) // dude I hate lua (jkjkjkjk)
 			{
 				trace('opening a lua state (because we are cool :))');
@@ -2622,7 +2664,7 @@ class PlayState extends MusicBeatState
 		var playerCounter:Int = 0;
 
 		// Per song offset check
-		#if cpp
+		#if windows
 			var songPath = 'assets/data/' + PlayState.SONG.song.toLowerCase() + '/';
 			for(file in sys.FileSystem.readDirectory(songPath))
 			{
@@ -2807,7 +2849,7 @@ class PlayState extends MusicBeatState
 
 				//If modcharts don't work, just do the normal intro for arrows.
 				//This allows for Termination to work even without modcharts (although it'll lack some functionality like the pincers and stuff, thankfully sawblades are hardcoded :) )
-				#if cpp
+				#if windowss
 				if(!(SONG.song.toLowerCase() == "extermination" || SONG.song.toLowerCase() == "redacted")) //Disables usual intro for Termination AND REDACTED
 					FlxTween.tween(babyArrow, {y: babyArrow.y + 10, alpha: 1}, 1, {ease: FlxEase.circOut, startDelay: 0.5 + (0.2 * i)});
 				#else
@@ -3048,7 +3090,7 @@ class PlayState extends MusicBeatState
 		perfectMode = false;
 		#end
 
-		#if cpp
+		#if windows
 		if (executeModchart && lua != null && songStarted)
 		{
 			setVar('songPos',Conductor.songPosition);
@@ -3161,7 +3203,7 @@ class PlayState extends MusicBeatState
 			scoreTxt.text = "Suggested Offset: " + offsetTest;
 
 		}
-		if (FlxG.keys.justPressed.ENTER) //Modified so that enter can skip the thanks for playing screen.
+		if (FlxG.keys.justPressed.ENTER #if android || FlxG.android.justReleased.BACK #end) //Modified so that enter can skip the thanks for playing screen.
 		{
 			if(startedCountdown && canPause){
 				persistentUpdate = false;
@@ -3188,7 +3230,7 @@ class PlayState extends MusicBeatState
 			DiscordClient.changePresence("Chart Editor", null, null, true);
 			#end
 			FlxG.switchState(new ChartingState());
-			#if cpp
+			#if windows
 			if (lua != null)
 			{
 				Lua.close(lua);
@@ -3227,7 +3269,7 @@ class PlayState extends MusicBeatState
 		/* if (FlxG.keys.justPressed.NINE)
 			FlxG.switchState(new Charting()); */
 
-		#if debug
+		#if !sys
 		if (FlxG.keys.justPressed.EIGHT)
 		{
 			FlxG.switchState(new AnimationDebug(SONG.player2));
@@ -3380,7 +3422,7 @@ class PlayState extends MusicBeatState
 			{
 				var offsetX = 0;
 				var offsetY = 0;
-				#if cpp
+				#if windows
 				if (lua != null)
 				{
 					offsetX = getVar("followXOffset", "float");
@@ -3388,7 +3430,7 @@ class PlayState extends MusicBeatState
 				}
 				#end
 				camFollow.setPosition(dad.getMidpoint().x + 150 + offsetX, dad.getMidpoint().y - 100 + offsetY);
-				#if cpp
+				#if windows
 				if (lua != null)
 					callLua('playerTwoTurn', []);
 				#end
@@ -3426,7 +3468,7 @@ class PlayState extends MusicBeatState
 			{
 				var offsetX = 0;
 				var offsetY = 0;
-				#if cpp
+				#if windows
 				if (lua != null)
 				{
 					offsetX = getVar("followXOffset", "float");
@@ -3435,7 +3477,7 @@ class PlayState extends MusicBeatState
 				#end
 				camFollow.setPosition(boyfriend.getMidpoint().x - 100 + offsetX, boyfriend.getMidpoint().y - 100 + offsetY);
 
-				#if cpp
+				#if windows
 				if (lua != null)
 					callLua('playerOneTurn', []);
 				#end
@@ -3729,7 +3771,7 @@ class PlayState extends MusicBeatState
 									dad.playAnim('singLEFT' + altAnim, true);
 						}
 	
-						#if cpp
+						#if windows
 						if (lua != null)
 							callLua('playerTwoSing', [Math.abs(daNote.noteData), Conductor.songPosition]);
 						#end
@@ -4167,7 +4209,7 @@ class PlayState extends MusicBeatState
 
 			FlxG.switchState(new StoryMenuState());
 
-			#if cpp
+			#if windows
 			if (lua != null)
 			{
 				Lua.close(lua);
@@ -4179,12 +4221,11 @@ class PlayState extends MusicBeatState
 
 			if (SONG.validScore)
 			{
-				NGio.unlockMedal(60961);
 				Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
 			}
 
-			if(storyDifficulty == 2) //You can only unlock Termination after beating story week on hard.
-				FlxG.save.data.terminationUnlocked = true; //Congratulations, you unlocked hell! Have fun! ~♥
+	//		if(storyDifficulty == 2) //You can only unlock Termination after beating story week on hard.
+	//			FlxG.save.data.terminationUnlocked = true; //Congratulations, you unlocked hell! Have fun! ~♥
 
 
 			FlxG.save.data.weekUnlocked = StoryMenuState.weekUnlocked;	
@@ -4214,10 +4255,11 @@ class PlayState extends MusicBeatState
 
 	function endSong():Void
 	{
-		if (!loadRep)
-			rep.SaveReplay();
+		#if mobileC
+		mcontrols.visible = false;
+	    #end
 
-		#if cpp
+		#if windows
 		if (executeModchart)
 		{
 			Lua.close(lua);
@@ -4235,9 +4277,9 @@ class PlayState extends MusicBeatState
 			#end
 		}
 
-		if(SONG.song.toLowerCase() == "extermination"){
-			FlxG.save.data.terminationBeaten = true; //Congratulations, you won!
-		}
+	//	if(SONG.song.toLowerCase() == "extermination"){
+	//		FlxG.save.data.terminationBeaten = true; //Congratulations, you won!
+	//	}
 
 		if (offsetTesting)
 		{
@@ -4279,7 +4321,7 @@ class PlayState extends MusicBeatState
 
 						FlxG.switchState(new StoryMenuState());
 
-						#if cpp
+						#if windows
 						if (lua != null)
 						{
 							Lua.close(lua);
@@ -4292,7 +4334,6 @@ class PlayState extends MusicBeatState
 
 						if (SONG.validScore)
 						{
-							NGio.unlockMedal(60961);
 							Highscore.saveWeekScore(storyWeek, campaignScore, storyDifficulty);
 						}
 
@@ -4678,10 +4719,10 @@ class PlayState extends MusicBeatState
 			//Dodge code, yes it's bad but oh well. -Haz
 			//var dodgeButton = controls.ACCEPT; //I have no idea how to add custom controls so fuck it. -Haz
 
-			if(FlxG.keys.justPressed.SPACE)
+			if(controls.ACCEPT || _vpad.buttonA.justPressed)
 				trace('butttonpressed');
 
-			if(FlxG.keys.justPressed.SPACE && !bfDodging && bfCanDodge){
+			if(controls.ACCEPT || _vpad.buttonA.justPressed && !bfDodging && bfCanDodge){
 				trace('DODGE START!');
 				bfDodging = true;
 				bfCanDodge = false;
@@ -4718,10 +4759,10 @@ class PlayState extends MusicBeatState
 			//Dodge code, yes it's bad but oh well. -Haz
 			//var dodgeButton = controls.ACCEPT; //I have no idea how to add custom controls so fuck it. -Haz
 			//Haha Copy-paste LOL (although modified a bit)
-			if(FlxG.keys.justPressed.SPACE)
+			if(controls.ACCEPT || _vpad.buttonA.justPressed)
 				trace('butttonpressed');
 
-			if(FlxG.keys.justPressed.SPACE && !bfDodging && bfCanDodge){
+			if(controls.ACCEPT || _vpad.buttonA.justPressed && !bfDodging && bfCanDodge){
 				trace('DODGE START!');
 				bfDodging = true;
 				bfCanDodge = false;
@@ -4772,6 +4813,9 @@ class PlayState extends MusicBeatState
 		var rightR = controls.RIGHT_R;
 		var downR = controls.DOWN_R;
 		var leftR = controls.LEFT_R;
+
+		if(controls.PAUSE || _vpad.buttonA.justPressed)
+			trace('worked!');
 
 		if (loadRep) // replay code
 		{
@@ -5192,7 +5236,7 @@ class PlayState extends MusicBeatState
 				}
 			}
 
-			#if cpp
+			#if windows
 			if (lua != null)
 				callLua('playerOneMiss', [direction, Conductor.songPosition]);
 			#end
@@ -5361,7 +5405,7 @@ class PlayState extends MusicBeatState
 						}
 					}	
 		
-					#if cpp
+					#if windows
 					if (lua != null)
 						callLua('playerOneSing', [note.noteData, Conductor.songPosition]);
 					#end
@@ -5484,7 +5528,7 @@ class PlayState extends MusicBeatState
 			resyncVocals();
 		}
 
-		#if cpp
+		#if windows
 		if (executeModchart && lua != null)
 		{
 			setVar('curStep',curStep);
@@ -5814,7 +5858,7 @@ class PlayState extends MusicBeatState
 			notes.sort(FlxSort.byY, FlxSort.DESCENDING);
 		}
 
-		#if cpp
+		#if windows
 		if (executeModchart && lua != null)
 		{
 			setVar('curBeat',curBeat);

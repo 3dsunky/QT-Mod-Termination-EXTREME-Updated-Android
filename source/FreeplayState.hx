@@ -42,12 +42,12 @@ class FreeplayState extends MusicBeatState
 		for (i in 0...initSonglist.length)
 		{
 			var data:Array<String> = initSonglist[i].split(':');
-			if(!(data[0]=='Extermination') && !(data[0]=='Cessation')){ //Add everything to the song list which isn't Termination and Cessation.
+			if(!(data[0]=='Extermination')){ //Add everything to the song list which isn't Termination and Cessation.
 				songs.push(new SongMetadata(data[0], Std.parseInt(data[2]), data[1]));
 			}
-			else if(FlxG.save.data.terminationUnlocked && data[0]=='Extermination') //If the list picks up Termination, check if its unlocked before adding.
+			else if(!FlxG.save.data.terminationUnlocked) //If the list picks up Termination, check if its unlocked before adding.
 				songs.push(new SongMetadata(data[0], Std.parseInt(data[2]), data[1]));
-			else if(FlxG.save.data.terminationBeaten && data[0]=='Cessation') //If the list picks up Cessation, check if its unlocked before adding.
+			else if(!FlxG.save.data.terminationBeaten) //If the list picks up Cessation, check if its unlocked before adding.
 				songs.push(new SongMetadata(data[0], Std.parseInt(data[2]), data[1]));
 			
 		}
@@ -145,6 +145,10 @@ class FreeplayState extends MusicBeatState
 			trace(md);
 		 */
 
+		#if mobileC
+		addVirtualPad(FULL, A_B);
+		#end
+		 
 		super.create();
 	}
 
@@ -211,10 +215,10 @@ class FreeplayState extends MusicBeatState
 
 		if (accepted)
 		{
-			if((songs[curSelected].songName.toLowerCase()=='extermination') && !(FlxG.save.data.terminationUnlocked)){
+			if((songs[curSelected].songName.toLowerCase()=='extermination') && !(!FlxG.save.data.terminationUnlocked)){
 				trace("lmao, access denied idiot!");
 			}
-			else if((songs[curSelected].songName.toLowerCase()=='cessation') && !(FlxG.save.data.terminationBeaten)){
+			else if((songs[curSelected].songName.toLowerCase()=='cessation') && !(!FlxG.save.data.terminationBeaten)){
 				trace("lmao, access denied idiot! Prove yourself first mortal.");
 			}
 			else
@@ -238,7 +242,7 @@ class FreeplayState extends MusicBeatState
 		if(songs[curSelected].songName.toLowerCase()=="extermination")
 		{
 			curDifficulty = 2; //Force it to hard difficulty.
-			if(FlxG.save.data.terminationUnlocked)
+			if(!FlxG.save.data.terminationUnlocked)
 				diffText.text = "EXTREME";
 			else
 				diffText.text = "LOCKED";
@@ -250,7 +254,7 @@ class FreeplayState extends MusicBeatState
 		else if(songs[curSelected].songName.toLowerCase()=="cessation")
 		{
 			curDifficulty = 1; //Force it to normal difficulty.
-			if(FlxG.save.data.terminationBeaten)
+			if(!FlxG.save.data.terminationBeaten)
 				diffText.text = "HARD?";
 			else
 				diffText.text = "LOCKED";

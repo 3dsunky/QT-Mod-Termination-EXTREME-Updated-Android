@@ -49,6 +49,9 @@ class OptionsMenu extends MusicBeatState
 			new WatermarkOption("Turn off all watermarks from the engine."),
 			new QTOptimiseOption("Disables some visual elements to help performance in 3rd and 4th song.")
 			
+		]),
+		new OptionCatagory("Mobile settings", [
+			new CustomControls("edit a control"),
 		])
 		
 	];
@@ -88,6 +91,10 @@ class OptionsMenu extends MusicBeatState
 		versionShit.scrollFactor.set();
 		versionShit.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(versionShit);
+
+		#if mobileC
+		addVirtualPad(UP_DOWN, A_B);
+		#end
 
 		super.create();
 	}

@@ -1,6 +1,6 @@
 package;
 
-#if cpp
+#if windows
 import llua.Lua;
 #end
 import Controls.Control;
@@ -15,6 +15,7 @@ import flixel.text.FlxText;
 import flixel.tweens.FlxEase;
 import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
+import flixel.FlxCamera;
 
 class PauseSubState extends MusicBeatSubstate
 {
@@ -95,6 +96,16 @@ class PauseSubState extends MusicBeatSubstate
 		changeSelection();
 
 		cameras = [FlxG.cameras.list[FlxG.cameras.list.length - 1]];
+
+		#if mobileC
+		addVirtualPad(UP_DOWN, A_B);
+
+		var camcontrol = new FlxCamera();
+		FlxG.cameras.add(camcontrol);
+		camcontrol.bgColor.alpha = 0;
+		_virtualpad.cameras = [camcontrol];
+		#end
+
 	}
 
 	override function update(elapsed:Float)
@@ -121,7 +132,7 @@ class PauseSubState extends MusicBeatSubstate
 			changeSelection(1);
 		}
 		
-		#if cpp
+		#if windows
 			else if (leftP)
 			{
 				oldOffset = PlayState.songOffset;
@@ -189,7 +200,7 @@ class PauseSubState extends MusicBeatSubstate
 					FlxG.resetState();
 				case "Exit to menu":
 					PlayState.loadRep = false;
-					#if cpp
+					#if windows
 					if (PlayState.lua != null)
 					{
 						Lua.close(PlayState.lua);
